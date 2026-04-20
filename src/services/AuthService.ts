@@ -8,8 +8,9 @@ import type {
     LoginResponse,
     RegisterResponse,
     UserDetailResponse,
-    ApiResponse,
 } from "../types/AuthType";
+
+import type { ApiResponse } from "../types/ApiResponse";
 
 // POST /auth/login
 export async function login(loginRequest: LoginRequest): Promise<LoginResponse> {

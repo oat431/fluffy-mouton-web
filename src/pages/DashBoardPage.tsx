@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import MainLayout from "../layouts/Section.tsx";
