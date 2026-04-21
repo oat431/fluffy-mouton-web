@@ -38,7 +38,8 @@ function NavBar() {
                 <ul className="menu menu-horizontal px-1 items-center">
                     <li><Link to="/about">About</Link></li>
                     <li><Link to="/contact">Contact</Link></li>
-                    {isAuthenticated && <li><Link to="/dashboard">Dashboard</Link></li>}
+                    {isAuthenticated && <li><Link to="/profile">Profile</Link></li>}
+                    {isAuthenticated && <li><Link to="/short-link">Short Link</Link></li>}
                     {!isAuthenticated ? (
                         <li><Link to="/login" className="btn btn-sm btn-primary ml-2">Login</Link></li>
                     ) : (

@@ -22,7 +22,7 @@ export default function LoginPage() {
 
             if (response.status === "SUCCESS" && response.data) {
                 login(response.data.access_token, response.data.refresh_token);
-                navigate("/dashboard");
+                navigate("/profile");
             } else {
                 setError(response.error?.message ?? "Login succeeded but no token was returned.");
             }

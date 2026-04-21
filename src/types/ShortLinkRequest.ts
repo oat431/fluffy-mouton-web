@@ -1,5 +1,4 @@
 export interface ShortLinkRequest {
-    type: string;
-    originalLink: string;
-    customAlias?: string;
+    url: string;
+    custom_name?: string;
 }
