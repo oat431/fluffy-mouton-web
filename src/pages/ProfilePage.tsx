@@ -6,7 +6,7 @@ import { getUserDetail, revokeAccess } from "../services/AuthService.ts";
 import { useAuth } from "../context/AuthContext.tsx";
 import type { UserDetail } from "../types/AuthType.ts";
 
-export default function DashboardPage() {
+export default function ProfilePage() {
     const { refreshToken, logout } = useAuth();
     const navigate = useNavigate();
 
