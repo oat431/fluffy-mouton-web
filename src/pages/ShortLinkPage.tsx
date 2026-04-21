@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import MainLayout from "../layouts/Section.tsx";
 import { useEffect, useState } from "react";
 // import { useAuth } from "../context/AuthContext.tsx";
-import { getShortLinks } from "../services/ShortLinkService.ts";
+import { createCustomShortLink, getShortLinks, createRandomShortLink} from "../services/ShortLinkService.ts";
 import type { ShortLinkList } from "../types/ShortLinkDto.ts";
 import ClickToCopy from "../components/ClickToCopy.tsx";
 export default function ShortLinkPage() {
@@ -11,18 +12,40 @@ export default function ShortLinkPage() {
     const [customAlias, setCustomAlias] = useState<string>("");
     const [shortLinks, setShortLinks] = useState<ShortLinkList[]>([]);
 
-    useEffect(() => {
-        async function fetchAllLink() {
-            try {
-                const data = (await getShortLinks()).data as unknown as ShortLinkList[];
-                console.log("Short Links:", data);
-                setShortLinks(data);
-            } catch (_error) {
-                console.error("Error fetching short links:", _error);
-            }
+    const fetchAllLink = async () => {
+        try {
+            const data = (await getShortLinks()).data as unknown as ShortLinkList[];
+            console.log("Short Links:", data);
+            setShortLinks(data);
+        } catch (_error) {
+            console.error("Error fetching short links:", _error);
         }
+    };
+
+    useEffect(() => {
         void fetchAllLink();
-    }, []); 
+    }, []);
+
+    const createLink = async () => {
+        try {
+            if (isCustom) {
+                await createCustomShortLink({
+                    url: targetUrl,
+                    custom_name: customAlias,
+                });
+            } else {
+                await createRandomShortLink({
+                    url: targetUrl,
+                });
+            }
+            await fetchAllLink();
+            setTargetUrl("");
+            setCustomAlias("");
+            setIsCustom(false);
+        } catch (error) {
+            console.error("Error creating custom short link:", error);
+        }
+    }
 
     const cvrtTOShrt = (linkType: string, alias: string) => {
         return `http://localhost:8004/api/v1/${linkType === "CUSTOM" ? "c" : "r"}/${alias}`;
@@ -42,7 +65,7 @@ export default function ShortLinkPage() {
                         <input type="text" className="input w-full" placeholder="Enter Custom Short URL" value={customAlias} onChange={(e) => setCustomAlias(e.target.value)}/>
                     </div>
                 )}
-                <button className="btn btn-primary mt-4">Process</button>
+                <button className="btn btn-primary mt-4" onClick={() => void createLink()}>Process</button>
             </fieldset>
             <table className="table table-zebra w-full">
                 <thead>
