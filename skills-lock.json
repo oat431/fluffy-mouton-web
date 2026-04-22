@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "69fdd9b11ef9762697b29887500d28f45920bbe18e8946e823ab3090492dacb7"
     },
+    "expo-tailwind-setup": {
+      "source": "expo/skills",
+      "sourceType": "github",
+      "computedHash": "16c53e80cacd65369acfd8a4f5cf06a60083cc6d980127b4b2e384b81ce0e547"
+    },
     "jest-react-testing": {
       "source": "manutej/luxor-claude-marketplace",
       "sourceType": "github",
