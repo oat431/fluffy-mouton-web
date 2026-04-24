@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Navigate } from "react-router";
 import MainLayout from "../layouts/Section.tsx";
 import { login as loginService } from "../services/AuthService.ts";
 import { useAuth } from "../context/AuthContext.tsx";
@@ -11,8 +11,12 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    if (isAuthenticated) {
+        return <Navigate to="/short-link" replace />;
+    }
 
     const handleLogin = async () => {
         setIsLoading(true);
@@ -22,9 +26,9 @@ export default function LoginPage() {
 
             if (response.status === "SUCCESS" && response.data) {
                 login(response.data.access_token, response.data.refresh_token);
-                navigate("/profile");
+                navigate("/short-link");
             } else {
-                setError(response.error?.message ?? "Login succeeded but no token was returned.");
+                setError(response.error?.Message ?? "Login succeeded but no token was returned.");
             }
         } catch (err: unknown) {
             console.error("Login failed:", err);
@@ -70,10 +74,6 @@ export default function LoginPage() {
                     {isLoading ? <span className="loading loading-spinner"></span> : "Login"}
                 </button>
 
-                <p className="text-sm text-center mt-3">
-                    Don't have an account?{" "}
-                    <Link to="/register" className="link link-primary">Register</Link>
-                </p>
             </fieldset>
         </MainLayout>
     );

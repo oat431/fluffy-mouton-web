@@ -12,7 +12,7 @@ function NavBar() {
 
     const handleLogout = () => {
         logout();
-        navigate("/");
+        navigate("/login");
     }
 
     useEffect(() => {
@@ -31,13 +31,11 @@ function NavBar() {
     return (
         <div className="navbar bg-base-100 shadow-sm">
             <div className="flex-1">
-                <Link to="/" className="btn btn-ghost text-xl">Fluffy Mouton</Link>
+                <Link to={isAuthenticated ? "/short-link" : "/login"} className="btn btn-ghost text-xl">Fluffy Mouton</Link>
                 {status === 'OK' ? <span className="badge badge-sm badge-secondary">READY</span> : <span className="badge badge-sm badge-error">ERROR</span>}
             </div>
             <div className="flex-none">
                 <ul className="menu menu-horizontal px-1 items-center">
-                    <li><Link to="/about">About</Link></li>
-                    <li><Link to="/contact">Contact</Link></li>
                     {isAuthenticated && <li><Link to="/profile">Profile</Link></li>}
                     {isAuthenticated && <li><Link to="/short-link">Short Link</Link></li>}
                     {!isAuthenticated ? (
