@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -28,7 +29,7 @@ export default function VerifyEmailPage() {
                     setMessage(typeof response.data === "string" ? response.data : "Email verified successfully!");
                 } else {
                     setState("error");
-                    setMessage(response.error?.message ?? "Verification failed.");
+                    setMessage(response.error?.Message ?? "Verification failed.");
                 }
             } catch {
                 setState("error");
