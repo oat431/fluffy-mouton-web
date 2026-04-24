@@ -1,5 +1,6 @@
 export interface ShortLinkList {
-    link_type: string;
+    id: string;
     short_link: string;
     original_link: string;
+    link_type: string;
 }
