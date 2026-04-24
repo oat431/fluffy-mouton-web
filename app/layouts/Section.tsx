@@ -1,13 +1,13 @@
 import Footer from "../components/Footer"
 import NavBar from "../components/NavBar"
 
-function Section({ children }: { children: React.ReactNode }) {
+function Section({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
     return (
         <>
             <NavBar />
             <div className="hero bg-base-200 min-h-screen">
-                <div className="hero-content text-center">
-                    <div className="max-w-md">
+                <div className={wide ? "hero-content w-full max-w-none px-2 sm:px-4 lg:px-6" : "hero-content text-center"}>
+                    <div className={wide ? "w-full max-w-none" : "max-w-md"}>
                         {children}
                     </div>
                 </div>

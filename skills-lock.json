@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "API Integration Specialist": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "computedHash": "79be72a11a9a834165f0e123a1e6234cb737928c00bbe6612820c74db0c4dd94"
+    },
     "daisyui-5": {
       "source": "nenorrell/skills",
       "sourceType": "github",

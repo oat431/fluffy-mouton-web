@@ -21,3 +21,13 @@ export async function getShortLinks(): Promise<ApiResponse<ShortLinkList[]>> {
     const response = await api.get<ApiResponse<ShortLinkList[]>>("/short-link/");
     return response.data;
 }
+
+export async function updateShortLink(id: string, shortLinkRequest: ShortLinkRequest): Promise<ApiResponse<ShortLinkList>> {
+    const response = await api.put<ApiResponse<ShortLinkList>>(`/short-link/${id}`, shortLinkRequest);
+    return response.data;
+}
+
+export async function deleteShortLink(id: string): Promise<ApiResponse<null>> {
+    const response = await api.delete<ApiResponse<null>>(`/short-link/${id}`);
+    return response.data;
+}

@@ -6,8 +6,8 @@ export interface ApiResponse<T> {
 }
 
 export interface ApiError {
-    http_code: number;
-    error_code: string;
-    message: string;
+    HttpCode: number;
+    ErrorCode: string;
+    Message: string;
 }
 

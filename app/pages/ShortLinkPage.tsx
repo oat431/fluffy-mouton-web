@@ -1,8 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import MainLayout from "../layouts/Section.tsx";
-import { useState } from "react";
-import { Form, useLoaderData, useNavigation } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { Form, useLoaderData, useNavigation, useFetcher, useRevalidator } from "react-router";
 import type { ClientActionFunctionArgs } from "react-router";
-import { createCustomShortLink, getShortLinks, createRandomShortLink} from "../services/ShortLinkService.ts";
+import { createCustomShortLink, getShortLinks, createRandomShortLink, updateShortLink, deleteShortLink} from "../services/ShortLinkService.ts";
 import type { ShortLinkList } from "../types/ShortLinkDto.ts";
 import ClickToCopy from "../components/ClickToCopy.tsx";
 
@@ -18,46 +19,131 @@ export async function clientLoader() {
 
 export async function clientAction({ request }: ClientActionFunctionArgs) {
     const formData = await request.formData();
-    const targetUrl = formData.get("targetUrl") as string;
-    const isCustom = formData.get("isCustom") === "on";
-    const customAlias = formData.get("customAlias") as string;
+    const action = formData.get("_action") as string;
 
     try {
-        if (isCustom) {
-            await createCustomShortLink({ url: targetUrl, custom_name: customAlias });
-        } else {
-            await createRandomShortLink({ url: targetUrl });
+        if (action === "create") {
+            const targetUrl = formData.get("targetUrl") as string;
+            const isCustom = formData.get("isCustom") === "on";
+            const customAlias = formData.get("customAlias") as string;
+
+            const result = isCustom 
+                ? await createCustomShortLink({ url: targetUrl, custom_name: customAlias })
+                : await createRandomShortLink({ url: targetUrl });
+
+            if (result.status !== "SUCCESS") {
+                return { error: result.error?.Message || "Failed to create short link" };
+            }
+        } else if (action === "delete") {
+            const linkId = formData.get("linkId") as string;
+            const result = await deleteShortLink(linkId);
+            
+            if (result.status !== "SUCCESS") {
+                return { error: result.error?.Message || "Failed to delete short link" };
+            }
+        } else if (action === "update") {
+            const linkId = formData.get("linkId") as string;
+            const newUrl = formData.get("newUrl") as string;
+            const result = await updateShortLink(linkId, { url: newUrl });
+            
+            if (result.status !== "SUCCESS") {
+                return { error: result.error?.Message || "Failed to update short link" };
+            }
         }
     } catch (error) {
-        console.error("Error creating short link:", error);
+        const errorMessage = error instanceof Error ? error.message : "An error occurred";
+        console.error("Error in client action:", errorMessage);
+        return { error: errorMessage };
     }
-    return null;
+    
+    return { success: true };
 }
 
 export default function ShortLinkPage() {
     const { shortLinks } = useLoaderData<typeof clientLoader>();
     const navigation = useNavigation();
-    const isSubmitting = navigation.state === "submitting";
+    const revalidator = useRevalidator();
+    const deleteFetcher = useFetcher();
+    const updateFetcher = useFetcher();
     
+    const isSubmitting = navigation.state === "submitting";
     const [isCustom, setIsCustom] = useState<boolean>(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editUrl, setEditUrl] = useState<string>("");
 
+    // Refs to track previous states and avoid duplicate revalidations
+    const prevDeleteStateRef = useRef<string | null>(null);
+    const prevUpdateStateRef = useRef<string | null>(null);
+    const prevNavStateRef = useRef<string | null>(null);
 
+    // Revalidate only once when delete completes (state changes from "submitting" to "idle")
+    useEffect(() => {
+        if (prevDeleteStateRef.current === "submitting" && deleteFetcher.state === "idle") {
+            void revalidator.revalidate();
+        }
+        prevDeleteStateRef.current = deleteFetcher.state;
+    }, [deleteFetcher.state, revalidator]);
+
+    // Revalidate only once when update completes (state changes from "submitting" to "idle")
+    useEffect(() => {
+        if (prevUpdateStateRef.current === "submitting" && updateFetcher.state === "idle") {
+            void revalidator.revalidate();
+        }
+        prevUpdateStateRef.current = updateFetcher.state;
+    }, [updateFetcher.state, revalidator]);
+
+    // Revalidate only once when form submission completes (state changes from "submitting" to "idle")
+    useEffect(() => {
+        if (prevNavStateRef.current === "submitting" && navigation.state === "idle") {
+            void revalidator.revalidate();
+        }
+        prevNavStateRef.current = navigation.state;
+    }, [navigation.state, revalidator]);
 
     const cvrtTOShrt = (linkType: string, alias: string) => {
         return `http://localhost:8004/api/v1/${linkType === "CUSTOM" ? "c" : "r"}/${alias}`;
     }
 
+    const handleEditClick = (link: ShortLinkList) => {
+        setEditingId(link.id);
+        setEditUrl(link.original_link);
+    }
+
+    const handleEditCancel = () => {
+        setEditingId(null);
+        setEditUrl("");
+    }
+
+    const handleEditSave = (linkId: string) => {
+        const formData = new FormData();
+        formData.append("_action", "update");
+        formData.append("linkId", linkId);
+        formData.append("newUrl", editUrl);
+        void updateFetcher.submit(formData, { method: "post" });
+        handleEditCancel();
+    }
+
+    const handleDelete = (linkId: string) => {
+        if (confirm("Are you sure you want to delete this short link?")) {
+            const formData = new FormData();
+            formData.append("_action", "delete");
+            formData.append("linkId", linkId);
+            void deleteFetcher.submit(formData, { method: "post" });
+        }
+    }
+
     return (
-        <MainLayout>
-            <div className="max-w-4xl mx-auto space-y-8 p-4">
-                {/* Header Section */}
-                <div className="text-center space-y-2 my-8">
+        <MainLayout wide>
+            <div className="w-full min-h-screen px-4 py-8">
+                <div className="max-w-full mx-auto space-y-8">
+                    {/* Header Section */}
+                    <div className="text-center space-y-2 my-8">
                     <h1 className="text-4xl md:text-5xl font-black text-base-content tracking-tight">URL Shortener</h1>
                     <p className="text-base-content/60 text-lg">Create short, memorable links in seconds.</p>
                 </div>
 
                 {/* Create Link Card */}
-                <div className="card bg-base-100 shadow-xl border border-base-200">
+                <div className="card bg-base-100 shadow-xl border border-base-200 w-full">
                     <div className="card-body">
                         <h2 className="card-title text-xl mb-4 text-base-content/90">Shorten a new URL</h2>
                         <Form method="post" className="space-y-6">
@@ -110,6 +196,8 @@ export default function ShortLinkPage() {
                                 </div>
                             </div>
 
+                            <input type="hidden" name="_action" value="create" />
+
                             <div className="card-actions justify-end mt-6">
                                 <button type="submit" className="btn btn-primary w-full sm:w-auto min-w-32 shadow-sm transition-transform active:scale-95" disabled={isSubmitting}>
                                     {isSubmitting ? (
@@ -130,7 +218,7 @@ export default function ShortLinkPage() {
                 </div>
 
                 {/* Links Table Card */}
-                <div className="card bg-base-100 shadow-xl border border-base-200">
+                <div className="card bg-base-100 shadow-xl border border-base-200 w-full">
                     <div className="card-body p-0">
                         <div className="p-6 border-b border-base-200 flex justify-between items-center">
                             <h2 className="card-title text-xl text-base-content/90">Recent Links</h2>
@@ -138,43 +226,103 @@ export default function ShortLinkPage() {
                         </div>
                         
                         {shortLinks.length > 0 ? (
-                            <div className="overflow-x-auto w-full">
-                                <table className="table table-zebra table-pin-rows w-full">
-                                    <thead className="bg-base-200/50 text-base-content/70 text-sm uppercase tracking-wider">
-                                        <tr>
-                                            <th className="w-16 text-center rounded-none font-semibold">#</th>
-                                            <th className="min-w-[200px] font-semibold">Short Link</th>
-                                            <th className="w-full font-semibold">Destination</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    {shortLinks.map((link, index) => {
-                                        const shortUrl = cvrtTOShrt(link.link_type, link.short_link);
-                                        return (
-                                            <tr key={index} className="hover group transition-colors">
-                                                <td className="text-center text-base-content/50 font-mono text-sm">{index + 1}</td>
-                                                <td>
-                                                    <div className="flex items-center gap-3">
-                                                        <a href={shortUrl} target="_blank" rel="noopener noreferrer" className="link link-hover link-primary font-mono font-medium truncate max-w-xs transition-colors">
-                                                            {shortUrl.replace('http://localhost:8004/api/v1/', '.../')}
-                                                        </a>
-                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                                            <ClickToCopy text={shortUrl} />
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <div className="truncate max-w-[200px] sm:max-w-xs md:max-w-md text-base-content/70 text-sm">
-                                                        <span className="tooltip tooltip-bottom" data-tip={link.original_link}>
-                                                            {link.original_link}
-                                                        </span>
-                                                    </div>
-                                                </td>
+                            <div className="w-full">
+                                <div className="overflow-x-auto w-full">
+                                    <table className="table w-full">
+                                        <thead className="bg-base-200/50 text-base-content/70 text-sm uppercase tracking-wider">
+                                            <tr>
+                                                <th className="w-12 text-center font-semibold">#</th>
+                                                <th className="font-semibold">Short Link</th>
+                                                <th className="font-semibold">Destination URL</th>
+                                                <th className="w-32 text-center font-semibold">Actions</th>
                                             </tr>
-                                        );
-                                    })}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                        {shortLinks.map((link, index) => {
+                                            const shortUrl = cvrtTOShrt(link.link_type, link.short_link);
+                                            const isEditing = editingId === link.id;
+                                            
+                                            return (
+                                                <tr key={link.id} className="hover:bg-base-200/30 transition-colors border-b border-base-200/50">
+                                                    <td className="text-center text-base-content/50 font-mono text-sm font-semibold">{index + 1}</td>
+                                                    <td>
+                                                        <div className="flex items-center gap-2">
+                                                            <a 
+                                                                href={shortUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="link link-hover link-primary font-mono font-medium text-sm break-all"
+                                                            >
+                                                                {shortUrl}
+                                                            </a>
+                                                            <div className="flex-shrink-0">
+                                                                <ClickToCopy text={shortUrl} />
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        {isEditing ? (
+                                                            <div className="flex gap-2 items-center">
+                                                                <input 
+                                                                    type="url"
+                                                                    value={editUrl}
+                                                                    onChange={(e) => setEditUrl(e.target.value)}
+                                                                    className="input input-bordered input-sm w-full"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-base-content/70 text-sm break-all">
+                                                                {link.original_link}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        <div className="flex gap-1 justify-center">
+                                                            {isEditing ? (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => handleEditSave(link.id)}
+                                                                        className="btn btn-xs btn-success"
+                                                                        disabled={updateFetcher.state === "submitting"}
+                                                                        title="Save changes"
+                                                                    >
+                                                                        Save
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={handleEditCancel}
+                                                                        className="btn btn-xs btn-ghost"
+                                                                        title="Cancel editing"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => handleEditClick(link)}
+                                                                        className="btn btn-xs btn-info btn-outline"
+                                                                        title="Edit URL"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleDelete(link.id)}
+                                                                        className="btn btn-xs btn-error btn-outline"
+                                                                        title="Delete link"
+                                                                        disabled={deleteFetcher.state === "submitting"}
+                                                                    >
+                                                                        Delete
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         ) : (
                             <div className="py-20 text-center flex flex-col items-center justify-center">
@@ -189,6 +337,7 @@ export default function ShortLinkPage() {
                         )}
                     </div>
                 </div>
+            </div>
             </div>
         </MainLayout>
     );
