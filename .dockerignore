@@ -1,0 +1,11 @@
+node_modules
+build
+.git
+.gitignore
+Dockerfile
+docker-compose.yml
+README.md
+.vscode
+.agents
+npm-debug.log*
+yarn-error.log*

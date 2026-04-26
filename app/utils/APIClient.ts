@@ -2,7 +2,9 @@
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 import axios from "axios";
 
-const baseURL: string = (import.meta.env.FLUMOU_API_URL as string) || "http://localhost:8004/api/v1";
+const baseURL: string =
+    (import.meta.env.FLUMOU_API_URL as string) ||
+    "http://localhost:8004/api/v1";
 
 const api = axios.create({
     baseURL: baseURL,
