@@ -1,0 +1,12 @@
+services:
+  fluffy-mouton-web:
+    container_name: fluffy-mouton-web
+    image: fluffy-mouton-web:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FLUMOU_API_URL: ${FLUMOU_API_URL:-}
+    restart: unless-stopped
+    ports:
+      - "3000:80"
