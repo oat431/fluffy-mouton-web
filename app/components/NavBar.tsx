@@ -16,23 +16,29 @@ function NavBar() {
     }
 
     useEffect(() => {
+        // Health check requires auth through the gateway.
+        // Only check when user is authenticated.
+        if (!isAuthenticated) {
+            setStatus("🔒");
+            return;
+        }
         async function fetchStatus() {
             try {
                 const data = await healthCheck() as string;
                 console.log("API Status:", data);
                 setStatus(data);
-            } catch (_error) {
-                setStatus(`Error: ${String(_error)}`);
+            } catch {
+                setStatus("Error");
             }
         }
         void fetchStatus();
-    }, []);
+    }, [isAuthenticated]);
 
     return (
         <div className="navbar bg-base-100 shadow-sm">
             <div className="flex-1">
                 <Link to={isAuthenticated ? "/short-link" : "/login"} className="btn btn-ghost text-xl">Fluffy Mouton</Link>
-                {status === 'OK' ? <span className="badge badge-sm badge-secondary">READY</span> : <span className="badge badge-sm badge-error">ERROR</span>}
+                {status === 'OK' ? <span className="badge badge-sm badge-success">OK</span> : status === '🔒' ? <span className="badge badge-sm badge-ghost">🔒</span> : <span className="badge badge-sm badge-error">DOWN</span>}
             </div>
             <div className="flex-none">
                 <ul className="menu menu-horizontal px-1 items-center">
