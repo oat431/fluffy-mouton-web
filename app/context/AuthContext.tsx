@@ -1,55 +1,88 @@
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/set-state-in-effect */
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import api from "../utils/APIClient";
+
+interface UserInfo {
+    id: string;
+    username: string;
+}
 
 interface AuthContextType {
-    token: string | null;
-    refreshToken: string | null;
     isAuthenticated: boolean;
-    login: (accessToken: string, refreshToken: string) => void;
+    isLoading: boolean;
+    user: UserInfo | null;
+    login: () => void;
     logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [token, setToken] = useState<string | null>(null);
-    const [refreshToken, setRefreshToken] = useState<string | null>(null);
+const GATEWAY_AUTH_URL = "https://gateway.panomete.com/oauth2/authorization/keycloak";
+const GATEWAY_LOGOUT_URL = "https://gateway.panomete.com/logout";
 
-    // Initialize from localStorage on mount
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [user, setUser] = useState<UserInfo | null>(null);
+
+    // Check auth status on mount by calling a protected endpoint
     useEffect(() => {
-        const storedToken = localStorage.getItem("jwt_token");
-        const storedRefreshToken = localStorage.getItem("refresh_token");
-        if (storedToken) setToken(storedToken);
-        if (storedRefreshToken) setRefreshToken(storedRefreshToken);
+        let cancelled = false;
+
+        const checkAuth = async () => {
+            try {
+                const response = await api.get("/short/");
+                if (!cancelled && response.data?.status === "SUCCESS") {
+                    setIsAuthenticated(true);
+                }
+            } catch {
+                if (!cancelled) {
+                    setIsAuthenticated(false);
+                    setUser(null);
+                }
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        checkAuth();
+        return () => { cancelled = true; };
     }, []);
 
-    const login = (accessToken: string, newRefreshToken: string) => {
-        setToken(accessToken);
-        setRefreshToken(newRefreshToken);
-        localStorage.setItem("jwt_token", accessToken);
-        localStorage.setItem("refresh_token", newRefreshToken);
-    };
+    // Also check for localStorage token (local dev / direct API mode)
+    useEffect(() => {
+        const token = localStorage.getItem("jwt_token");
+        if (token) {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    const login = useCallback(() => {
+        window.location.href = GATEWAY_AUTH_URL;
+    }, []);
 
     const logout = useCallback(() => {
-        setToken(null);
-        setRefreshToken(null);
+        setIsAuthenticated(false);
+        setUser(null);
         localStorage.removeItem("jwt_token");
         localStorage.removeItem("refresh_token");
+        window.location.href = GATEWAY_LOGOUT_URL;
     }, []);
 
-    // Auto-logout when the API client fires a 401 event
+    // Listen for 401 events from APIClient
     useEffect(() => {
-        const handleUnauthorized = () => logout();
+        const handleUnauthorized = () => {
+            setIsAuthenticated(false);
+            setUser(null);
+        };
         window.addEventListener("auth-unauthorized", handleUnauthorized);
         return () => window.removeEventListener("auth-unauthorized", handleUnauthorized);
-    }, [logout]);
+    }, []);
 
     return (
-        <AuthContext.Provider value= {{ token, refreshToken, isAuthenticated: !!token, login, logout }
-}>
-    { children }
-    </AuthContext.Provider>
+        <AuthContext.Provider value={{ isAuthenticated, isLoading, user, login, logout }}>
+            {children}
+        </AuthContext.Provider>
     );
 };
 
