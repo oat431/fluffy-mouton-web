@@ -14,11 +14,11 @@ vi.mock('../../context/AuthContext', () => ({
 describe('LoginPage', () => {
   it('renders sign in button', () => {
     render(<BrowserRouter><LoginPage /></BrowserRouter>);
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in with flowero guard/i })).toBeInTheDocument();
   });
 
-  it('shows redirect message', () => {
+  it('shows dev token section in non-prod', () => {
     render(<BrowserRouter><LoginPage /></BrowserRouter>);
-    expect(screen.getByText(/redirected to the central login/i)).toBeInTheDocument();
+    expect(screen.getByText(/paste a token/i)).toBeInTheDocument();
   });
 });
