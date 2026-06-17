@@ -1,80 +1,77 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import { useState } from "react";
-import { useNavigate, Navigate } from "react-router";
+import { Navigate } from "react-router";
 import MainLayout from "../layouts/Section.tsx";
-import { login as loginService } from "../services/AuthService.ts";
 import { useAuth } from "../context/AuthContext.tsx";
 
-export default function LoginPage() {
-    const [username, setUsername] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+const getAuthUrl = () =>
+    `https://gateway.panomete.com/oauth2/authorization/keycloak?redirect_uri=${encodeURIComponent(
+        (typeof window !== "undefined" ? window.location.origin : "") + "/short-link"
+    )}`;
 
-    const { login, isAuthenticated } = useAuth();
-    const navigate = useNavigate();
+export default function LoginPage() {
+    const { isAuthenticated, isLoading } = useAuth();
+    const [devToken, setDevToken] = useState("");
+    const isDev = !import.meta.env.PROD;
 
     if (isAuthenticated) {
         return <Navigate to="/short-link" replace />;
     }
 
-    const handleLogin = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await loginService({ username, password });
+    if (isLoading) {
+        return (
+            <MainLayout>
+                <div className="flex justify-center items-center p-12">
+                    <span className="loading loading-spinner loading-lg"></span>
+                </div>
+            </MainLayout>
+        );
+    }
 
-            if (response.status === "SUCCESS" && response.data) {
-                login(response.data.access_token, response.data.refresh_token);
-                navigate("/short-link");
-            } else {
-                setError(response.error?.Message ?? "Login succeeded but no token was returned.");
-            }
-        } catch (err: unknown) {
-            console.error("Login failed:", err);
-            setError("Invalid username or password.");
-        } finally {
-            setIsLoading(false);
-        }
+    const handleDevToken = () => {
+        const token = devToken.trim();
+        if (!token) return;
+        localStorage.setItem("jwt_token", token);
+        window.location.href = "/short-link";
     };
 
     return (
         <MainLayout>
-            <fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-xs text-left border p-4">
-                <legend className="fieldset-legend">Login</legend>
+            <div className="flex flex-col items-center gap-4 p-8">
+                <h2 className="text-xl font-bold">Sign In</h2>
 
-                {error && <div className="alert alert-error text-sm mb-2 py-2">{error}</div>}
+                {/* Production: OAuth2 redirect */}
+                {!isDev && (
+                    <>
+                        <p className="text-base-content/70 text-center max-w-sm">
+                            You'll be redirected to the central login page.
+                        </p>
+                        <button className="btn btn-primary" onClick={() => { window.location.href = getAuthUrl(); }}>
+                            Sign in with Flowero Guard
+                        </button>
+                    </>
+                )}
 
-                <label className="label">Username</label>
-                <input
-                    type="text"
-                    className="input"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={isLoading}
-                />
-
-                <label className="label">Password</label>
-                <input
-                    type="password"
-                    className="input"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    onKeyDown={(e) => { if (e.key === "Enter") void handleLogin(); }}
-                />
-
-                <button
-                    className="btn btn-neutral mt-4"
-                    onClick={() => void handleLogin()}
-                    disabled={isLoading}
-                >
-                    {isLoading ? <span className="loading loading-spinner"></span> : "Login"}
-                </button>
-
-            </fieldset>
+                {/* Dev: paste Keycloak token */}
+                {isDev && (
+                    <>
+                        <p className="text-base-content/70 text-center max-w-sm">
+                            Get a token from Keycloak and paste it below.
+                        </p>
+                        <textarea
+                            className="textarea textarea-bordered text-xs font-mono h-24 w-full max-w-sm"
+                            placeholder="Paste Keycloak access token..."
+                            value={devToken}
+                            onChange={(e) => setDevToken(e.target.value)}
+                        />
+                        <button className="btn btn-primary" onClick={handleDevToken} disabled={!devToken.trim()}>
+                            Sign in with Token
+                        </button>
+                        <p className="text-xs text-base-content/40">
+                            Get token: <code>curl -X POST https://auth.panomete.com/realms/flowerogate/protocol/openid-connect/token -d "grant_type=password" -d "client_id=service-shortlink" -d "client_secret=$SHORTLINK_SERVICE_SECRET" -d "username=panomete" -d "password=..."</code>
+                        </p>
+                    </>
+                )}
+            </div>
         </MainLayout>
     );
 }

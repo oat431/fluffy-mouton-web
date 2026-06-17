@@ -9,6 +9,7 @@ vi.mock('../../context/AuthContext', () => ({
     login: vi.fn(),
     logout: vi.fn(),
     isAuthenticated: true,
+    isLoading: false,
   })
 }));
 
@@ -19,17 +20,18 @@ describe('ShortLinkPage', () => {
       {
         path: '/',
         element: <ShortLinkPage />,
-        loader: () => ({ shortLinks: [] })
+        loader: () => ({ shortLinks: [] }),
+        HydrateFallback: () => null,
       }
     ]);
     
     render(<RouterProvider router={router} />);
     
-    expect(await screen.findByText(/enable custom short url/i)).toBeInTheDocument();
+    expect(await screen.findByText(/customize short link/i)).toBeInTheDocument();
     
-    const toggle = screen.getByRole('checkbox', { name: /enable custom short url/i });
+    const toggle = screen.getByRole('checkbox', { name: /customize short link/i });
     await user.click(toggle);
     
-    expect(screen.getByPlaceholderText(/enter custom short url/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/my-custom-alias/i)).toBeInTheDocument();
   });
 });
