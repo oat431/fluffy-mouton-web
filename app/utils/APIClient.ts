@@ -3,10 +3,10 @@
 import axios from "axios";
 
 // In production: calls https://gateway.panomete.com/api/v1 directly.
-// In dev: Vite proxy forwards /api/* to the gateway, so use relative path.
+// In dev: also calls gateway directly (session cookie is on that domain).
 const baseURL: string =
     (import.meta.env.FLUMOU_API_URL as string) ||
-    (import.meta.env.DEV ? "/api/v1" : "https://gateway.panomete.com/api/v1");
+    "https://gateway.panomete.com/api/v1";
 
 const api = axios.create({
     baseURL: baseURL,

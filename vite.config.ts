@@ -12,13 +12,6 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'https://gateway.panomete.com',
-        changeOrigin: true,
-        secure: true,
-      },
-    },
   },
   envPrefix: 'FLUMOU_',
   resolve: {
