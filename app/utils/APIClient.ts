@@ -2,18 +2,18 @@
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 import axios from "axios";
 
-// In production: calls https://gateway.panomete.com/api/v1 directly.
-// In dev: also calls gateway directly (session cookie is on that domain).
+// Production: through gateway (session-cookie auth)
+// Dev: direct to local API (Bearer token auth via JWKS)
 const baseURL: string =
     (import.meta.env.FLUMOU_API_URL as string) ||
-    "https://gateway.panomete.com/api/v1";
+    (import.meta.env.DEV ? "http://localhost:8004/api/v1" : "https://gateway.panomete.com/api/v1");
 
 const api = axios.create({
     baseURL: baseURL,
     headers: {
         "Content-Type": "application/json",
     },
-    withCredentials: true, // Send session cookie (needed for gateway auth)
+    withCredentials: !import.meta.env.DEV, // Session cookie only in prod (gateway)
 });
 
 // Interceptor: attach Bearer token for local dev / direct API access
