@@ -2,11 +2,11 @@
 /* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
 import axios from "axios";
 
-// In production, go through the gateway (session-cookie auth).
-// In local dev, set FLUMOU_API_URL to point to the API directly (Bearer token auth).
+// In production: calls https://gateway.panomete.com/api/v1 directly.
+// In dev: Vite proxy forwards /api/* to the gateway, so use relative path.
 const baseURL: string =
     (import.meta.env.FLUMOU_API_URL as string) ||
-    "https://gateway.panomete.com/api/v1";
+    (import.meta.env.DEV ? "/api/v1" : "https://gateway.panomete.com/api/v1");
 
 const api = axios.create({
     baseURL: baseURL,

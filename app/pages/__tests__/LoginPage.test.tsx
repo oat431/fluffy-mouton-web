@@ -17,8 +17,8 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /sign in with flowero guard/i })).toBeInTheDocument();
   });
 
-  it('shows dev token section in non-prod', () => {
+  it('shows redirect message', () => {
     render(<BrowserRouter><LoginPage /></BrowserRouter>);
-    expect(screen.getByText(/paste a token/i)).toBeInTheDocument();
+    expect(screen.getByText(/redirected to the central login/i)).toBeInTheDocument();
   });
 });
