@@ -2,7 +2,8 @@ import { Navigate } from "react-router";
 import MainLayout from "../layouts/Section.tsx";
 import { useAuth } from "../context/AuthContext.tsx";
 
-const GATEWAY_AUTH = "https://gateway.panomete.com/oauth2/authorization/keycloak";
+const GATEWAY_AUTH_BASE = "https://gateway.panomete.com/oauth2/authorization/keycloak";
+const GATEWAY_AUTH = `${GATEWAY_AUTH_BASE}?redirect_uri=${encodeURIComponent(window.location.origin + "/short-link")}`;
 
 export default function LoginPage() {
     const { isAuthenticated, isLoading } = useAuth();
