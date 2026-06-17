@@ -17,7 +17,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const GATEWAY_AUTH_URL = `https://gateway.panomete.com/oauth2/authorization/keycloak?redirect_uri=${encodeURIComponent(window.location.origin + "/short-link")}`;
+const getAuthUrl = () =>
+    `https://gateway.panomete.com/oauth2/authorization/keycloak?redirect_uri=${encodeURIComponent(
+        (typeof window !== "undefined" ? window.location.origin : "") + "/short-link"
+    )}`;
 const GATEWAY_LOGOUT_URL = "https://gateway.panomete.com/logout";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -58,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const login = useCallback(() => {
-        window.location.href = GATEWAY_AUTH_URL;
+        window.location.href = getAuthUrl();
     }, []);
 
     const logout = useCallback(() => {
